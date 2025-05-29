@@ -1,0 +1,46 @@
+from ultralytics import YOLO
+import cv2
+
+# Load YOLOv5n pre-trained on COCO
+model = YOLO("yolov5n.pt")  # Automatically downloads if not present
+
+# Load your test video
+video_path = "C:/Users/Admin/Desktop/PROJECTS/RC_CAR_AUTOMATION/videos/walk_clip.mp4"
+cap = cv2.VideoCapture(video_path)
+
+if not cap.isOpened():
+    print("❌ Could not open video.")
+    exit()
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Run object detection
+    results = model(frame)
+
+    # Copy the frame for annotation
+    annotated_frame = frame.copy()
+
+    for box in results[0].boxes:
+        cls_id = int(box.cls[0])
+        if cls_id == 0:  # 0 = person in COCO
+            x1, y1, x2, y2 = box.xyxy[0].tolist()
+            conf = float(box.conf[0])
+
+            # Draw bounding box and label
+            cv2.rectangle(annotated_frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+            label = f"Person {conf:.2f}"
+            cv2.putText(annotated_frame, label, (int(x1), int(y1) - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+    # Display frame
+    cv2.imshow("Person Tracking - YOLOv5n", annotated_frame)
+
+    # Press 'q' to quit
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
